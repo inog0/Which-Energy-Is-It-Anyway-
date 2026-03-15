@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Which Energy Is It Anyway?</title>
+
+<style>
+body{
+margin:0;
+font-family:Segoe UI, Arial, sans-serif;
+background:linear-gradient(135deg,#1f2937,#0f172a);
+color:white;
+display:flex;
+justify-content:center;
+align-items:center;
+height:100vh;
+}
+
+/* TITLE SCREEN */
+#titleScreen{text-align:center;}
+#titleScreen h1{font-size:60px;margin-bottom:30px;}
+#startButton{
+  padding:18px 40px;
+  font-size:24px;
+  border:none;
+  border-radius:10px;
+  background:#22c55e;
+  color:white;
+  cursor:pointer;
+  transition:0.2s;
+}
+#startButton:hover{background:#16a34a;transform:scale(1.05);}
+
+/* GAME */
+.game-container{
+width:1000px;
+max-width:95%;
+background:#111827;
+border-radius:14px;
+padding:40px;
+box-shadow:0 10px 40px rgba(0,0,0,0.6);
+text-align:center;
+display:none;
+}
+h1{margin-top:0;font-size:42px;}
+#clueBox{
+margin:30px auto;
+padding:30px;
+background:#1f2937;
+border-radius:10px;
+font-size:28px;
+min-height:100px;
+display:flex;
+align-items:center;
+justify-content:center;
+transition:0.4s;
+}
+.buttons{
+display:grid;
+grid-template-columns:repeat(4,1fr);
+gap:18px;
+margin-top:25px;
+}
+.energyButton{
+padding:20px;
+font-size:18px;
+border:none;
+border-radius:10px;
+background:#2563eb;
+color:white;
+cursor:pointer;
+transition:0.2s;
+}
+.energyButton:hover{background:#1d4ed8;transform:scale(1.05);}
+.energyButton:disabled{background:#374151;cursor:default;transform:none;}
+#result{margin-top:25px;font-size:26px;height:40px;}
+#next{margin-top:20px;padding:14px 28px;font-size:18px;border:none;border-radius:8px;background:#22c55e;color:white;cursor:pointer;display:none;}
+#next:hover{background:#16a34a;}
+#score{margin-top:20px;font-size:20px;color:#d1d5db;}
+#progress{font-size:18px;color:#9ca3af;margin-top:10px;}
+
+/* END SCREEN */
+#endScreen{display:none;text-align:center;}
+#endScreen h1{font-size:60px;margin-bottom:10px;}
+#finalScore{font-size:40px;margin:20px 0;}
+#replayButton{
+padding:18px 40px;font-size:24px;border:none;border-radius:10px;background:#2563eb;color:white;cursor:pointer;
+}
+#replayButton:hover{background:#1d4ed8;}
+
+/* correct animation */
+.correct{animation:glow 0.6s ease;}
+@keyframes glow{
+0%{background:#1f2937;}
+50%{background:#16a34a;}
+100%{background:#1f2937;}
+}
+
+/* confetti */
+.confetti{
+position:fixed;
+width:8px;
+height:8px;
+top:-10px;
+animation:fall linear forwards;
+}
+@keyframes fall{
+to{
+transform:translateY(110vh) rotate(720deg);
+opacity:0;
+}
+}
+</style>
+</head>
+
+<body>
+
+<!-- TITLE SCREEN -->
+<div id="titleScreen">
+<h1>Which Energy Is It Anyway?</h1>
+<button id="startButton" onclick="startGame()">Start Game</button>
+</div>
+
+<!-- GAME SCREEN -->
+<div class="game-container" id="gameContainer">
+<h1>Which Energy Is It Anyway?</h1>
+<div id="clueBox"></div>
+<div class="buttons" id="buttons"></div>
+<div id="result"></div>
+<button id="next" onclick="nextRound()">Next Round</button>
+<div id="score">Score: 0</div>
+<div id="progress"></div>
+</div>
+
+<!-- END SCREEN -->
+<div id="endScreen">
+<h1>Good job!</h1>
+<h2>This is your score:</h2>
+<div id="finalScore"></div>
+<button id="replayButton" onclick="replayGame()">Replay Game</button>
+</div>
+
+<script>
+const clues = [
+{clue:"This stored energy is potential energy to be used on demand.", answer:"Solar Energy"},
+{clue:"Cloudy and rainy days will slow down energy storage.", answer:"Solar Energy"},
+{clue:"This energy collects and stores energy emitted by something.", answer:"Solar Energy"},
+{clue:"Dangerous to birds and bats.", answer:"Wind Energy"},
+{clue:"Only works under certain environmental circumstances which causes unpredictable amounts of energy.", answer:"Wind Energy"},
+{clue:"The second most used renewable energy source in Canada.", answer:"Wind Energy"},
+{clue:"Creates 59% of all electricity used by Canadians.", answer:"Hydro Energy"},
+{clue:"Originally used by the Greeks in the 3rd century.", answer:"Hydro Energy"},
+{clue:"Movement of something downhill which spins a turbine to create electricity.", answer:"Hydro Energy"},
+{clue:"Leads to waste that stays for thousands of years and must be carefully disposed of.", answer:"Nuclear Power"},
+{clue:"Accidents while opperating could cause damage to people and the environment.", answer:"Nuclear Power"},
+{clue:"Creates 10% of all energy usage worldwide.", answer:"Nuclear Power"},
+{clue:"Produced by uranium atoms splitting, creating heat, which then creates steam that spins turbines.", answer:"Nuclear Power"},
+{clue:"Comes from recent plant and animal material.", answer:"Biomass Energy"},
+{clue:"Burning waste can release harmful pollutants into the air.", answer:"Biomass Energy"},
+{clue:"Is a renewable resource because we can grow more plants and trees.", answer:"Biomass Energy"},
+{clue:"Water moves in and out which spins turbines.", answer:"Tidal Energy"},
+{clue:"Involves the moon.", answer:"Tidal Energy"},
+{clue:"Could disrupt marine life.", answer:"Tidal Energy"},
+{clue:"Can only be harnessed in areas with large ocean ranges.", answer:"Tidal Energy"},
+{clue:"Uses heat from inside the earth.", answer:"Geothermal Energy"},
+{clue:"Difficult and expensive to find locations, but drilling is required to confirm if the conditions can be met.", answer:"Geothermal Energy"},
+{clue:"Comes from the remains of plants and animals that lived millions of years ago.", answer:"Fossil Fuels"},
+{clue:"Getting these out of the ground can be dangerous. It could cause oil spills, coal mine accidents, and other environmental disasters.", answer:"Fossil Fuels"}
+]
+
+
+const energyTypes=[
+"Solar Energy","Wind Energy","Hydro Energy","Nuclear Power","Biomass Energy","Tidal Energy","Geothermal Energy","Fossil Fuels"
+];
+
+let remaining=[...clues];
+let current;
+let score=0;
+
+function startGame(){
+document.getElementById("titleScreen").style.display="none";
+document.getElementById("gameContainer").style.display="block";
+generateButtons();
+nextRound();
+}
+
+function generateButtons(){
+const container=document.getElementById("buttons");
+energyTypes.forEach(type=>{
+const btn=document.createElement("button");
+btn.className="energyButton";
+btn.innerText=type;
+btn.onclick=()=>checkAnswer(type);
+container.appendChild(btn);
+});
+}
+
+function nextRound(){
+document.getElementById("result").innerText="";
+document.getElementById("next").style.display="none";
+document.querySelectorAll(".energyButton").forEach(b=>b.disabled=false);
+
+if(remaining.length===0){endGame(); return}
+
+const index=Math.floor(Math.random()*remaining.length);
+current=remaining.splice(index,1)[0];
+document.getElementById("clueBox").innerText=current.clue;
+document.getElementById("progress").innerText="Clues Remaining: "+remaining.length;
+}
+
+function checkAnswer(choice){
+document.querySelectorAll(".energyButton").forEach(b=>b.disabled=true);
+
+if(choice===current.answer){
+score++;
+document.getElementById("score").innerText="Score: "+score;
+document.getElementById("result").innerText="Correct";
+
+// Highlight clue box for correct answer
+document.getElementById("clueBox").classList.add("correct");
+setTimeout(()=>document.getElementById("clueBox").classList.remove("correct"),600);
+
+// Confetti ONLY for correct answers
+confetti();
+}else{
+document.getElementById("result").innerText="Incorrect. Answer: "+current.answer;
+// No confetti for wrong answers
+}
+
+document.getElementById("next").style.display="inline-block";
+}
+
+function endGame(){
+document.getElementById("gameContainer").style.display="none";
+document.getElementById("endScreen").style.display="block";
+document.getElementById("finalScore").innerText=score;
+}
+
+function replayGame(){
+score=0;
+remaining=[...clues];
+document.getElementById("score").innerText="Score: 0";
+document.getElementById("endScreen").style.display="none";
+document.getElementById("gameContainer").style.display="block";
+nextRound();
+}
+
+function confetti(){
+for(let i=0;i<60;i++){
+const piece=document.createElement("div");
+piece.className="confetti";
+piece.style.left=Math.random()*100+"vw";
+piece.style.background=`hsl(${Math.random()*360},70%,55%)`;
+piece.style.animationDuration=(Math.random()*1.5+1.5)+"s";
+document.body.appendChild(piece);
+setTimeout(()=>piece.remove(),2500);
+}
+}
+</script>
+</body>
+</html>
